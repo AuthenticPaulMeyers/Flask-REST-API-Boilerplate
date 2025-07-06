@@ -5,13 +5,14 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 # Users table
-class Users(db.Model):
+class User(db.Model):
+    __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(32), nullable=False, unique=True)
     email = db.Column(db.String(90), nullable=False, unique=True)
     bio = db.Column(db.Text, nullable=True)
     password_hash = db.Column(db.Text, nullable=False)
-    profile_pic_url = db.Column(db.Text, nullable=True)
+    profile_picture_url = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
 

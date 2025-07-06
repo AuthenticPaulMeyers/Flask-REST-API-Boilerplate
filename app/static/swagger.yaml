@@ -1,0 +1,402 @@
+swagger: "2.0"
+info:
+  title: Biblia AI Chat API
+  description: AI Chat API to chat with Bible characters.
+  version: "1.0"
+basePath: /api/v1.0.0
+host: bible-ai-rnlc.onrender.com
+schemes:
+  - https
+tags:
+  - name: Auth
+    description: User Authentication
+  - name: Characters
+    description: Chat with characters
+
+securityDefinitions:
+  Bearer:
+    type: apiKey
+    name: Authorization
+    in: header
+    description: "JWT Authorization header using the Bearer scheme. Example: 'Bearer {token}'"
+
+security:
+  - Bearer: []
+
+paths:
+  # Authentication and User Management
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Register a new user
+      consumes:
+        - multipart/form-data
+      parameters:
+        - in: formData
+          name: image
+          type: file
+          description: User profile picture
+        - in: formData
+          name: username
+          type: string
+          description: Username
+          required: true
+        - in: formData
+          name: email
+          type: string
+          description: User email
+          required: true
+        - in: formData
+          name: password
+          type: string
+          description: User password
+          required: true              
+      responses:
+        201:
+          description: User registered successfully
+        400:
+          description: Invalid input
+        500:
+          description: Internal server error
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Login a user
+      parameters:
+        - in: body
+          name: user
+          description: The user to login
+          required: true
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+              password:
+                type: string
+      responses:
+        200:
+          description: User logged in successfully
+          schema:
+            type: object
+            properties:
+              token:
+                type: string
+        401:
+          description: Unauthorized
+        500:
+          description: Internal server error
+        400:
+          description: Invalid input
+  /auth/me:
+    get:
+      tags:
+        - Auth
+      summary: Get current user information
+      responses:
+        200:
+          description: User information retrieved successfully
+          schema:
+            $ref: "#/definitions/User"
+        401:
+          description: Unauthorized
+        500:
+          description: Internal server error
+  /auth/reset-password-request:
+    post:
+      tags:
+        - Auth
+      summary: Request a password reset
+      parameters:
+        - in: body
+          name: email
+          description: The email of the user requesting a password reset
+          required: true
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+      responses:
+        200:
+          description: Password reset request successful
+        400:
+          description: Invalid email address
+        500:
+          description: Internal server error
+  /auth/reset-password/{token}:
+    post:
+      tags:
+        - Auth
+      summary: Reset a user's password
+      parameters:
+        - in: path
+          name: token
+          type: string
+          description: User token
+          required: true
+        - in: body
+          name: password
+          description:: reset_info
+          required: true
+          schema:
+            type: object
+            properties:
+              password:
+                type: string
+              confirm-password:
+                type: string
+      responses:
+        200:
+          description: Password reset successful
+        400:
+          description: Invalid input or token
+        500:
+          description: Internal server error
+  /auth/token/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Refresh user authentication token
+      parameters:
+        - in: body
+          name: refresh_token
+          description: The refresh token to use
+          required: true
+          schema:
+            type: object
+            properties:
+              refresh_token:
+                type: string
+      responses:
+        200:
+          description: Token refreshed successfully
+          schema:
+            type: object
+            properties:
+              token:
+                type: string
+        401:
+          description: Unauthorized
+        500:
+          description: Internal server error
+  # Character route
+  /characters/get-all:
+    get:
+      tags: 
+        - Characters
+      summary: Get all characters with filters
+      parameters:
+        - in: query
+          name: filter
+          schema:
+            type: string
+            enum: ["Old Testament", "New Testament"]
+          required: false
+          description: Filter query
+      responses:
+        200:
+          description: All characters
+          schema: 
+            type: array
+            items:
+              $ref: "#/definitions/Character"
+        400:
+          description: Not found
+        500:
+          description: Internal server error
+  /characters/add:
+    post:
+      tags:
+        - Characters
+      summary: Add Bible character to chat list
+      parameters:
+        - in: formData
+          name: image
+          type: file
+          description: Character profile picture
+        - in: formData
+          name: name
+          type: string
+          description: Bible character name
+          required: true
+        - in: formData
+          name: description
+          type: string
+          description: Character description
+          required: true
+        - in: formData
+          name: book
+          type: string
+          description: The book the character is from (New Testament or Old Testament)
+          required: true  
+      responses:
+        201:
+          description: Character created successfully
+        400:
+          description: Invalid input
+        500:
+          description: Internal server error
+  /characters/{character_id}/delete:
+    delete:
+      tags:
+        - Characters
+      summary: Delete a character by ID
+      parameters:
+        - in: path
+          name: character_id
+          required: true
+          type: integer
+          description: The ID of the character to delete
+      responses:
+        204:
+          description: Character deleted successfully
+        404:
+          description: Character not found
+        500:
+          description: Internal server error
+  /characters/search:
+    get:
+      tags:
+        - Characters
+      summary: Search for character chat by name
+      parameters:
+        - in: query
+          name: name
+          required: true
+          type: string
+          description: The search term to use
+      responses:
+        200:
+          description: The name of the character
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Character"
+        400:
+          description: Invalid search term
+        500:
+          description: Internal server error
+  /characters/{character_id}/chat/clear:
+    delete:
+      tags:
+        - Characters
+      summary: Clear character chat with character ID
+      parameters:
+        - in: path
+          name: character_id
+          required: true
+          type: integer
+          description: The ID of the character to delete its chat
+      responses:
+        204:
+          description: Chat deleted successfully
+        404:
+          description: Character chat not found
+        500:
+          description: Internal server error
+  /characters/{character_id}/chat:
+    post:
+      tags:
+        - Characters
+      summary: Chat with character
+      parameters:
+        - in: path
+          name: character_id
+          required: true
+          type: integer
+          description: Chat with character by ID
+        - in: body
+          name: content
+          required: true
+          type: string
+          description: A message to start chat
+          schema:
+            properties:
+              content:
+                type: string
+      responses:
+        200:
+          description: Chat created successfully
+        404:
+          description: Character not found
+        500:
+          description: Internal server error
+  /characters/{character_id}/chat/{message_id}/delete:
+    delete:
+      tags:
+        - Characters
+      summary: Delete a message by ID
+      parameters:
+        - in: path
+          name: character_id
+          required: true
+          type: integer
+          description: The ID of the character
+        - in: path
+          name: message_id
+          required: true
+          type: integer
+          description: The ID of the message to delete
+      responses:
+        400:
+          description: Invalid input
+        200:
+          description: Message deleted successfully
+        404:
+          description: Message not found
+        500:
+          description: Internal server error
+# Define database tables
+definitions:
+  Character:
+    type: object
+    required:
+      - name
+      - description
+      - profile_image_url
+      - book
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+      profile_image_url:
+        type: string
+  Users:
+    type: object
+    required:
+      - email
+      - username
+      - password
+      - profile_picture_url
+    properties:
+      email:
+        type: string
+      username:
+        type: string
+      password:
+        type: string
+      profile_picture_url:
+        type: string
+      bio:
+        type: string
+  Message:
+    type: object
+    required:
+      - sender_id
+      - content
+      - role
+      - character_id
+    properties:
+      sender_id:
+        type: integer
+      character_id:
+        type: integer
+      role:
+        type: string
+        enum: [user, assistant]
+      content:
+        type: string
